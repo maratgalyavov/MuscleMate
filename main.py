@@ -151,6 +151,11 @@ async def workout_frequency_callback(update: Update, context: ContextTypes.DEFAU
     workout_frequency = update.message.text
     logger.info(f"Workout frequency of {user.id}: {workout_frequency}")
     context.user_data['workout_frequency'] = workout_frequency
+    if int(workout_frequency) <= 0:
+        save_user_data(user.id, context.user_data)
+        await calculate_bmr(update, context)
+        await update.message.reply_text("Transitioning to the main menu.")
+        return await show_main_menu(update, context)
     await update.message.reply_text('What type of workouts do you usually do? (Cardio/Lifting/Both)')
     return WORKOUT_TYPE
 
@@ -279,7 +284,7 @@ async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, messa
         f"Workout Type: {user_data.get('workout_type')}\n"
         f"BMR: {user_data.get('bmr')} kcal/day"
     )
-    keyboard = [[InlineKeyboardButton("Back", callback_data='back')]]
+    keyboard = [[InlineKeyboardButton("Return", callback_data='return')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     if message:
         await message.reply_text(profile_info, reply_markup=reply_markup)
@@ -290,16 +295,16 @@ async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, messa
 async def user_profile_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     choice = query.data
-    if choice == 'back':
-        return await show_main_menu(update, context)
+    if choice == 'return':
+        return await show_main_menu(update, context, query.message)
     return USER_PROFILE
 
 async def calculate_bmr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Optional[Message]:
     # Assuming age is already collected and saved in user_data
     age = context.user_data.get('age', 25)  # Replace 25 with actual age
     gender = context.user_data.get('gender')
-    height = float(context.user_data.get('height'))
-    weight = float(context.user_data.get('weight'))
+    height = float(context.user_data.get('height').replace(',', '.'))
+    weight = float(context.user_data.get('weight').replace(',', '.'))
 
     if gender.lower() == 'male':
         bmr = 10 * weight + 6.25 * height - 5 * age + 5
@@ -308,7 +313,6 @@ async def calculate_bmr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> O
 
     context.user_data['bmr'] = bmr
     save_user_data(update.effective_user.id, context.user_data)  # Save updated data to file
-    return update.message.reply_text(f'Your Basal Metabolic Rate (BMR) is {bmr} kcal/day')
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -338,7 +342,7 @@ def main() -> None:
             INTENSITY: [CallbackQueryHandler(intensity_callback, pattern='^(low|medium|high)$')],
             FEEDBACK: [CallbackQueryHandler(feedback_callback, pattern='^(good|bad)$')],  # Add this line
             WORKOUT_AREA: [CallbackQueryHandler(workout_area_callback, pattern='^(single_muscle_group|compound)$')],
-            USER_PROFILE: [CallbackQueryHandler(user_profile, pattern='^user_profile$')],
+            USER_PROFILE: [CallbackQueryHandler(user_profile_callback, pattern='^return$')],  # Add this line
             AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, age_callback)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],

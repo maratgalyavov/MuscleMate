@@ -194,7 +194,6 @@ async def workout_area_callback(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     workout_type = query.data
     logger.info(f"User {user.id} selected workout type: {workout_type}")
-    context.user_data['workout_type'] = workout_type
 
     if workout_type == 'single_muscle_group':
         keyboard = [

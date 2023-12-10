@@ -16,6 +16,7 @@ import os
 from typing import Optional
 from telegram import Message
 import translators as trans
+import sqlite3
 
 dest_lang = 'en'
 supported_languages = trans.get_languages()
@@ -573,6 +574,62 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                                     )
 
     return ConversationHandler.END
+
+
+async def create_database_and_table():
+    connection = sqlite3.connect('users.db')
+    cursor = connection.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            gender TEXT,
+            height REAL,
+            weight REAL,
+            steps INTEGER,
+            muscle_group TEXT,
+            workout_area TEXT,
+            workout_frequency TEXT,
+            intensity TEXT,
+            workout_type TEXT,
+            bmr REAL,
+            age INTEGER
+        )
+    ''')
+
+    connection.commit()
+    connection.close()
+
+
+async def add_user_to_database(gender, height, weight, steps, muscle_group, workout_area, workout_frequency, intensity,
+                               workout_type, bmr, age):
+    connection = sqlite3.connect('users.db')
+    cursor = connection.cursor()
+
+    cursor.execute('''
+        INSERT INTO users (gender, height, weight, steps, muscle_group, workout_area, workout_frequency, intensity, workout_type, bmr, age)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        gender, height, weight, steps, muscle_group, workout_area, workout_frequency, intensity, workout_type, bmr,
+        age))
+
+    connection.commit()
+    connection.close()
+
+
+async def get_user(user_id):
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
+    user_data = cursor.fetchone()
+    conn.close()
+
+    if user_data is not None:
+        keys = (
+            'id', 'gender', 'height', 'weight', 'steps', 'muscle_group', 'workout_area', 'workout_frequency',
+            'intensity',
+            'workout_type', 'bmr', 'age')
+        return dict(zip(keys, user_data))
+    return None
 
 
 def main() -> None:

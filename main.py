@@ -39,7 +39,7 @@ WORKOUT_AREA = 11
 USER_PROFILE, BMR = range(12, 14)
 AGE = 14
 
-openai.api_key = ' '
+openai.api_key = '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'
 
 USER_DATA_FILE = "user_data.json"
 

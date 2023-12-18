@@ -39,7 +39,7 @@ WORKOUT_AREA = 11
 USER_PROFILE, BMR = range(12, 14)
 AGE = 14
 
-openai.api_key = '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'
+openai.api_key = ' '
 
 USER_DATA_FILE = "user_data.json"
 
@@ -95,9 +95,10 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, mes
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     if message:
-        await message.reply_text(main_menu, reply_markup=reply_markup)
+        mes = await message.reply_text(main_menu, reply_markup=reply_markup)
     else:
-        await update.message.reply_text(main_menu, reply_markup=reply_markup)
+        mes = await update.message.reply_text(main_menu, reply_markup=reply_markup)
+
     return MAIN_MENU
 
 
@@ -106,8 +107,12 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     dest_lang = context.user_data['lang']
     choice = query.data
     if choice == 'calorie_tracking':
-        # Transition to CALORIE_TRACKING state (define this state and its handling later)
-        pass
+        if dest_lang != 'en':
+            mes = trans.translate_text(query_text='In progress', from_language='en', to_language=dest_lang)
+        else:
+            mes = 'In progress'
+        await query.message.reply_text(mes)
+        return await show_main_menu(update, context, query.message)
     elif choice == 'workouts':
         if dest_lang != 'en':
             single_button = trans.translate_text(query_text="Single Muscle Group", from_language='en',
@@ -299,9 +304,17 @@ async def workout_frequency_callback(update: Update, context: ContextTypes.DEFAU
             context.user_data['workout_frequency'] = workout_frequency
             logger.info(f"Workout frequency of {user.id}: {workout_frequency}")
             save_user_data(user.id, context.user_data)
+            user_data = context.user_data
+            add_user_to_database(user.id, user_data['gender'], user_data['height'], user_data['weight'],
+                                 user_data['steps'], user_data['workout_frequency'], user_data['bmr'], user_data['age'])
             await calculate_bmr(update, context)
             await update.message.reply_text(main_menu_mes)
             return await show_main_menu(update, context)
+        else:
+            workout_frequency = max(0, int(workout_frequency))
+            context.user_data['workout_frequency'] = workout_frequency
+            logger.info(f"Workout frequency of {user.id}: {workout_frequency}")
+            save_user_data(user.id, context.user_data)
     except ValueError:
         await update.message.reply_text(invalid_workout_mes)
         return WORKOUT_FREQUENCY
@@ -318,6 +331,9 @@ async def workout_type_callback(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data['workout_type'] = workout_type.lower()
     save_user_data(user.id, context.user_data)  # Save all collected data to file
     await calculate_bmr(update, context)
+    user_data = context.user_data
+    add_user_to_database(user.id, user_data['gender'], user_data['height'], user_data['weight'], user_data['steps'],
+                         user_data['workout_frequency'], user_data['bmr'], user_data['age'])
     if dest_lang != 'en':
         transition_mes = trans.translate_text(query_text="Transitioning to the main menu.", from_language='en',
                                               to_language=dest_lang)
@@ -430,7 +446,7 @@ async def intensity_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if dest_lang != 'en':
         proc_mes = trans.translate_text(query_text='Processing your request. This may take a couple of minutes...',
                                         from_language='en', to_language=dest_lang)
-        feedback_mes = trans.translate_text(query_text='How was the workout plan?', from_language='en',
+        feedback_mes = trans.translate_text(query_text='How did you like the workout plan?', from_language='en',
                                             to_language=dest_lang)
     else:
         proc_mes = 'Processing your request. This may take a couple of minutes...'
@@ -464,9 +480,9 @@ async def intensity_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
     response_data = response.json()
     workout_suggestion = response_data['choices'][0]['message']['content'].strip()
-    if dest_lang != 'en':
-        workout_suggestion = trans.translate_text(query_text=workout_suggestion, from_language='en',
-                                                  to_language=dest_lang)
+    # if dest_lang != 'en':
+    #     workout_suggestion = trans.translate_text(query_text=workout_suggestion, from_language='en',
+    #                                               to_language=dest_lang)
     await processing_message.edit_text(workout_suggestion)
 
     feedback_keyboard = [
@@ -493,7 +509,8 @@ async def feedback_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, message: Optional[Message] = None) -> int:
-    user_data = context.user_data
+    # user_data = context.user_data
+    user_data = get_user(update.effective_user.id)[-1]
     dest_lang = context.user_data['lang']
     if dest_lang != 'en':
         gender = trans.translate_text(query_text='Gender', from_language='en', to_language=dest_lang)
@@ -516,14 +533,14 @@ async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, messa
         kcal = 'kcal/day'
         return_butt = "Return"
     profile_info = (
-        f"{gender}: {user_data.get('gender')}\n"
-        f"{height}: {user_data.get('height')} cm\n"
-        f"{weight}: {user_data.get('weight')} kg\n"
-        f"{steps}: {user_data.get('steps')}\n"
-        f"{freq}: {user_data.get('workout_frequency')} "
+        f"{gender}: {user_data['gender']}\n"
+        f"{height}: {user_data['height']} cm\n"
+        f"{weight}: {user_data['weight']} kg\n"
+        f"{steps}: {user_data['steps']}\n"
+        f"{freq}: {user_data['workout_frequency']} "
         f"{tpw}\n"
-        f"{wtype}: {user_data.get('workout_type')}\n"
-        f"BMR: {user_data.get('bmr')} {kcal}"
+        # f"{wtype}: {user_data['workout_type']}\n"
+        f"BMR: {user_data['bmr']} {kcal}"
     )
     keyboard = [
         [InlineKeyboardButton(return_butt,
@@ -564,7 +581,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     dest_lang = context.user_data['lang']
     logger.info(f"User {user.id} canceled the conversation.")
-    # logger.info("User %s canceled the conversation.", user.first_name)
     if dest_lang != 'en':
         cancel_mes = trans.translate_text(query_text="Bye! I hope we can talk again some day.", from_language='en',
                                           to_language=dest_lang)
@@ -576,64 +592,89 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 
-async def create_database_and_table():
+def create_database_and_table():
     connection = sqlite3.connect('users.db')
     cursor = connection.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
             gender TEXT,
             height REAL,
             weight REAL,
             steps INTEGER,
-            muscle_group TEXT,
-            workout_area TEXT,
-            workout_frequency TEXT,
-            intensity TEXT,
-            workout_type TEXT,
+            workout_frequency INTEGER,
             bmr REAL,
             age INTEGER
         )
     ''')
 
+    cursor.execute('''
+            CREATE TABLE IF NOT EXISTS weights (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER,
+                date DATE,
+                weight REAL
+            )
+        ''')
+
+    cursor.execute('''
+                CREATE TABLE IF NOT EXISTS steps (
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER,
+                    date DATE,
+                    steps INTEGER
+                )
+            ''')
+
+    cursor.execute('''
+                CREATE TABLE IF NOT EXISTS kcal (
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER,
+                    date DATE,
+                    type TEXT,
+                    kcal INTEGER
+                )
+            ''')
+
     connection.commit()
     connection.close()
 
 
-async def add_user_to_database(gender, height, weight, steps, muscle_group, workout_area, workout_frequency, intensity,
-                               workout_type, bmr, age):
+def add_user_to_database(user_id, gender, height, weight, steps, workout_frequency, bmr, age):
     connection = sqlite3.connect('users.db')
     cursor = connection.cursor()
 
-    cursor.execute('''
-        INSERT INTO users (gender, height, weight, steps, muscle_group, workout_area, workout_frequency, intensity, workout_type, bmr, age)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        gender, height, weight, steps, muscle_group, workout_area, workout_frequency, intensity, workout_type, bmr,
-        age))
+    cursor.execute(
+        '''INSERT INTO users (user_id, gender, height, weight, steps, workout_frequency, bmr, age) VALUES (?, ?, ?, 
+        ?, ?, ?, ?, ?)''',
+        (user_id, gender, height, weight, steps, workout_frequency, bmr, age))
 
     connection.commit()
     connection.close()
 
 
-async def get_user(user_id):
+def get_user(user_id):
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
-    user_data = cursor.fetchone()
+    cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+    user_data = cursor.fetchall()
     conn.close()
 
+    res = list()
     if user_data is not None:
-        keys = (
-            'id', 'gender', 'height', 'weight', 'steps', 'muscle_group', 'workout_area', 'workout_frequency',
-            'intensity',
-            'workout_type', 'bmr', 'age')
-        return dict(zip(keys, user_data))
+        for user in user_data:
+            keys = (
+                'user_id', 'gender', 'height', 'weight', 'steps', 'workout_frequency', 'bmr', 'age'
+            )
+            res.append(dict(zip(keys, user)))
+        return res
     return None
 
 
 def main() -> None:
     application = Application.builder().token("6668637502:AAEp-lxUpp2f3XKghLzeDSClw7ALZ6Ll0xY").build()
+
+    create_database_and_table()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],

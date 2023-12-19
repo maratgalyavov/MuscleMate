@@ -17,6 +17,7 @@ from typing import Optional
 from telegram import Message
 import translators as trans
 import sqlite3
+from random import randint
 
 dest_lang = 'en'
 supported_languages = trans.get_languages()
@@ -96,6 +97,8 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, mes
     reply_markup = InlineKeyboardMarkup(keyboard)
     if message:
         mes = await message.reply_text(main_menu, reply_markup=reply_markup)
+    elif query:
+        mes = await query.message.reply_text(main_menu, reply_markup=reply_markup)
     else:
         mes = await update.message.reply_text(main_menu, reply_markup=reply_markup)
 
@@ -145,6 +148,7 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def tracking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    user = query.from_user
     dest_lang = context.user_data['lang']
     choice = query.data
     if choice == 'return':
@@ -159,6 +163,23 @@ async def tracking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                                    to_language=dest_lang)
         await query.message.reply_text(mes)
         return STEPS
+    elif choice == 'cardio':
+        mes = trans.translate_text(query_text='How long was your workout in minutes?', translator='google',
+                                   to_language=dest_lang)
+        await query.message.reply_text(mes)
+        return CARDIO
+    elif choice == 'lifting':
+        mes = trans.translate_text(query_text='How long was your workout in minutes?', translator='google',
+                                   to_language=dest_lang)
+        await query.message.reply_text(mes)
+        return LIFTING
+    elif choice == 'burnt_kcal':
+        cardio, lifting = await get_workouts(user.id)
+        kcal = cardio * 500 / 60 + lifting * 5 + randint(-25, 26)
+        mes = trans.translate_text(query_text=f'Today you burnt {kcal} kcal', translator='google',
+                                   to_language=dest_lang)
+        await query.message.reply_text(mes)
+        return await show_main_menu(update, context)
 
 
 async def kcal_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -166,8 +187,32 @@ async def kcal_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     dest_lang = context.user_data['lang']
     kcal = update.message.text
     kcal = int(kcal)
-    add_kcal_record(user.id, kcal)
+    await add_record(user.id, 'kcal', kcal)
     mes = trans.translate_text(query_text='Calories added successfully. Returning to main menu.',
+                               translator='google', to_language=dest_lang)
+    await update.message.reply_text(mes)
+    return await show_main_menu(update, context)
+
+
+async def cardio_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = update.message.from_user
+    dest_lang = context.user_data['lang']
+    minutes = update.message.text
+    minutes = int(minutes)
+    await add_record(user.id, 'cardio', minutes)
+    mes = trans.translate_text(query_text='Workout added successfully. Returning to main menu.',
+                               translator='google', to_language=dest_lang)
+    await update.message.reply_text(mes)
+    return await show_main_menu(update, context)
+
+
+async def lifting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = update.message.from_user
+    dest_lang = context.user_data['lang']
+    minutes = update.message.text
+    minutes = int(minutes)
+    await add_record(user.id, 'lifting', minutes)
+    mes = trans.translate_text(query_text='Workout added successfully. Returning to main menu.',
                                translator='google', to_language=dest_lang)
     await update.message.reply_text(mes)
     return await show_main_menu(update, context)
@@ -182,22 +227,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_data = await get_user(user.id)
     if len(user_data) == 0:
         start_mes = trans.translate_text(
-            query_text="Let\'s start by collecting some information.\nWhat is your gender? (Male / Female / Other)",
+            query_text="Let\'s start by collecting some information.\nWhat is your gender?",
             translator='google', to_language=dest_lang)
-        await update.message.reply_text(start_mes)
+
+        male = trans.translate_text(query_text='Male', translator='google', to_language=dest_lang)
+        female = trans.translate_text(query_text='Female', translator='google', to_language=dest_lang)
+        start_keyboard = [
+            [InlineKeyboardButton(male, callback_data='male'), InlineKeyboardButton(female, callback_data='female')]
+        ]
+        start_markup = InlineKeyboardMarkup(start_keyboard)
+        await update.message.reply_text(start_mes, reply_markup=start_markup)
         return GENDER  # Transition to GENDER state
     else:
         return await show_main_menu(update, context)
 
 
 async def gender_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = update.message.from_user
-    gender = update.message.text
-    logger.info(f"Gender of {user.id}: {gender}")
-    context.user_data['gender'] = gender.lower()
+    query = update.callback_query
+    choice = query.data
+    user = query.from_user
+    logger.info(f"Gender of {user.id}: {choice}")
+    context.user_data['gender'] = choice
     dest_lang = context.user_data['lang']
-    age_mes = trans.translate_text(query_text="What is your age?", translator='google', to_language=dest_lang)
-    await update.message.reply_text(age_mes)
+    age_mes = trans.translate_text(query_text="What is your birth date in format dd.mm.yyyy?", translator='google',
+                                   to_language=dest_lang)
+    await query.message.reply_text(age_mes)
     return AGE
 
 
@@ -205,21 +259,21 @@ async def age_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     user = update.message.from_user
     dest_lang = context.user_data['lang']
     age = update.message.text
-    invalid_age_mes = trans.translate_text(query_text="Please enter a valid age.", translator='google',
-                                           to_language=dest_lang)
+    invalid_age_mes = trans.translate_text(query_text="Please enter a valid date in a required format",
+                                           translator='google', to_language=dest_lang)
     height_mes = trans.translate_text(query_text="What is your height in cm?", translator='google',
                                       to_language=dest_lang)
     try:
-        age = int(age)  # Make sure age is a valid number
-        if 0 < age < 120:  # Sanity check for age
-            logger.info(f"Age of {user.id}: {age}")
-            context.user_data['age'] = age
+        age = age.split('.')  # Make sure age is a valid number
+        if 1920 < int(age[2]) < 2020:  # Sanity check for age
+            logger.info(f"Birth date of {user.id}: {'.'.join(age)}")
+            context.user_data['birth_dt'] = age[2] + '-' + age[1] + '-' + age[0]
             await update.message.reply_text(height_mes)
             return HEIGHT
         else:
             await update.message.reply_text(invalid_age_mes)
             return AGE  # Repeat the AGE state if the input is not valid
-    except ValueError:
+    except ValueError or IndexError:
         await update.message.reply_text(invalid_age_mes)
         return AGE
 
@@ -228,7 +282,7 @@ async def height_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user = update.message.from_user
     dest_lang = context.user_data['lang']
     height = update.message.text
-    invalid_height_mes = trans.translate_text(query_text="Please enter a valid weight.", translator='google',
+    invalid_height_mes = trans.translate_text(query_text="Please enter a valid height.", translator='google',
                                               to_language=dest_lang)
     weight_mes = trans.translate_text(query_text='What is your weight in kg?', translator='google',
                                       to_language=dest_lang)
@@ -253,15 +307,18 @@ async def weight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     weight = update.message.text
     invalid_weight_mes = trans.translate_text(query_text="Please enter a valid weight.", translator='google',
                                               to_language=dest_lang)
-    steps_mes = trans.translate_text(query_text='On average, how many steps do you take per day?',
-                                     translator='google', to_language=dest_lang)
+    menu_mes = trans.translate_text(query_text='Redirecting to main menu', translator='google', to_language=dest_lang)
     try:
         weight = float(weight)
         if 30 < weight < 200:
             logger.info(f"Weight of {user.id}: {weight}")
             context.user_data['weight'] = weight
-            await update.message.reply_text(steps_mes)
-            return STEPS  # Transition to STEPS state
+            save_user_data(user.id, context.user_data)
+            user_data = context.user_data
+            await add_user_to_database(user.id, user_data['gender'], user_data['birth_dt'], user_data['height'],
+                                       user_data['weight'])
+            await update.message.reply_text(menu_mes)
+            return await show_main_menu(update, context)
         else:
             await update.message.reply_text(invalid_weight_mes)
             return WEIGHT
@@ -275,7 +332,7 @@ async def steps_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     dest_lang = context.user_data['lang']
     steps = update.message.text
     steps = int(steps)
-    add_steps_record(user.id, steps)
+    await add_record(user.id, 'steps', steps)
     mes = trans.translate_text(query_text='Steps added successfully. Returning to the main menu.',
                                translator='google', to_language=dest_lang)
     await update.message.reply_text(mes)
@@ -499,21 +556,17 @@ async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, messa
     gender = trans.translate_text(query_text='Gender', translator='google', to_language=dest_lang)
     height = trans.translate_text(query_text='Height', translator='google', to_language=dest_lang)
     weight = trans.translate_text(query_text='Weight', translator='google', to_language=dest_lang)
-    steps = trans.translate_text(query_text='Steps per day', translator='google', to_language=dest_lang)
-    freq = trans.translate_text(query_text='Workout Frequency', translator='google', to_language=dest_lang)
-    tpw = trans.translate_text(query_text='times per week', translator='google', to_language=dest_lang)
-    wtype = trans.translate_text(query_text='Workout Type', translator='google', to_language=dest_lang)
-    kcal = trans.translate_text(query_text='kcal/day', translator='google', to_language=dest_lang)
+    birth_dt = trans.translate_text(query_text='Date of birth', translator='google', to_language=dest_lang)
     return_butt = trans.translate_text(query_text='Return', translator='google', to_language=dest_lang)
     profile_info = (
         f"{gender}: {user_data['gender']}\n"
         f"{height}: {user_data['height']} cm\n"
         f"{weight}: {user_data['weight']} kg\n"
-        f"{steps}: {user_data['steps']}\n"
-        f"{freq}: {user_data['workout_frequency']} "
-        f"{tpw}\n"
+        f"{birth_dt}: {user_data['birth_dt']}\n"
+        # f"{freq}: {user_data['workout_frequency']} "
+        # f"{tpw}\n"
         # f"{wtype}: {user_data['workout_type']}\n"
-        f"BMR: {user_data['bmr']} {kcal}"
+        # f"BMR: {user_data['bmr']} {kcal}"
     )
     keyboard = [
         [InlineKeyboardButton(return_butt,
@@ -567,55 +620,44 @@ def create_database_and_table():
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER,
             gender TEXT,
-            height REAL,
-            weight REAL,
-            steps INTEGER,
-            workout_frequency INTEGER,
-            bmr REAL,
-            age INTEGER
+            birth_dt DATE,
+            height INTEGER,
+            weight INTEGER
         )
     ''')
 
     cursor.execute('''
-            CREATE TABLE IF NOT EXISTS weights (
-                id INTEGER PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS tracking (
                 user_id INTEGER,
                 date DATE,
-                weight REAL
+                type TEXT,
+                value REAL
             )
         ''')
-
-    cursor.execute('''
-                CREATE TABLE IF NOT EXISTS steps (
-                    id INTEGER PRIMARY KEY,
-                    user_id INTEGER,
-                    date DATE,
-                    steps INTEGER
-                )
-            ''')
-
-    cursor.execute('''
-                CREATE TABLE IF NOT EXISTS kcal (
-                    id INTEGER PRIMARY KEY,
-                    user_id INTEGER,
-                    date DATE,
-                    type TEXT,
-                    kcal INTEGER
-                )
-            ''')
 
     connection.commit()
     connection.close()
 
 
-async def add_user_to_database(user_id, gender, height, weight, steps, workout_frequency, bmr, age):
+async def add_user_to_database(user_id, gender, birth_dt, height, weight):
     connection = sqlite3.connect('users.db')
     cursor = connection.cursor()
 
     cursor.execute(
-        '''INSERT INTO users (user_id, gender, height, weight, steps, workout_frequency, bmr, age) VALUES (?, ?, ?, 
-        ?, ?, ?, ?, ?)''',
-        (user_id, gender, height, weight, steps, workout_frequency, bmr, age))
+        '''INSERT INTO users (user_id, gender, birth_dt, height, weight) VALUES (?, ?, ?, ?, ?)''',
+        (user_id, gender, birth_dt, height, weight))
+
+    connection.commit()
+    connection.close()
+
+
+async def add_record(user_id, type, value):
+    connection = sqlite3.connect('users.db')
+    cursor = connection.cursor()
+
+    cursor.execute(
+        '''INSERT INTO tracking (user_id, date, type, value) VALUES (?, date('now'), ?, ?)''',
+        (user_id, type, value))
 
     connection.commit()
     connection.close()
@@ -639,18 +681,30 @@ async def get_user(user_id):
     return None
 
 
+async def get_workouts(user_id):
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT sum(value) FROM tracking WHERE user_id=? and type='cardio' and date=date('now')", (user_id,))
+    cardio = cursor.fetchone()
+    cursor.execute("SELECT sum(value) FROM tracking WHERE user_id=? and type='lifting' and date=date('now')",
+                   (user_id,))
+    lifting = cursor.fetchone()
+    conn.close()
+
+    return [cardio[0], lifting[0]]
+
+
 def main() -> None:
-    # application = Application.builder().token("6668637502:AAEp-lxUpp2f3XKghLzeDSClw7ALZ6Ll0xY").build() # нужный
-    application = Application.builder().token("6520497677:AAH2QjNPwcqvYA558rJsSHOBW-RIDK6HX3Y").build()
+    application = Application.builder().token("6668637502:AAEp-lxUpp2f3XKghLzeDSClw7ALZ6Ll0xY").build() # нужный
+    # application = Application.builder().token("6520497677:AAH2QjNPwcqvYA558rJsSHOBW-RIDK6HX3Y").build()
 
     create_database_and_table()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            MAIN_MENU: [CallbackQueryHandler(main_menu_callback,
-                                             pattern='^(tracking|workouts|user_profile)$')],
-            GENDER: [MessageHandler(filters.TEXT & ~filters.COMMAND, gender_callback)],
+            MAIN_MENU: [CallbackQueryHandler(main_menu_callback, pattern='^(tracking|workouts|user_profile)$')],
+            GENDER: [CallbackQueryHandler(gender_callback, pattern='^(male|female)$')],
             HEIGHT: [MessageHandler(filters.TEXT & ~filters.COMMAND, height_callback)],
             WEIGHT: [MessageHandler(filters.TEXT & ~filters.COMMAND, weight_callback)],
             STEPS: [MessageHandler(filters.TEXT & ~filters.COMMAND, steps_callback)],
@@ -666,7 +720,9 @@ def main() -> None:
             AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, age_callback)],
             TRACKING: [
                 CallbackQueryHandler(tracking_callback, pattern='^(kcal|steps|cardio|lifting|burnt_kcal|return)$')],
-            KCAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, kcal_callback)]
+            KCAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, kcal_callback)],
+            CARDIO: [MessageHandler(filters.TEXT & ~filters.COMMAND, cardio_callback)],
+            LIFTING: [MessageHandler(filters.TEXT & ~filters.COMMAND, lifting_callback)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )

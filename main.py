@@ -18,6 +18,8 @@ from telegram import Message
 import translators as trans
 import sqlite3
 from random import randint
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 dest_lang = 'en'
 supported_languages = trans.get_languages()
@@ -41,6 +43,7 @@ USER_PROFILE, BMR = range(12, 14)
 AGE = 14
 TRACKING = 15
 KCAL, CARDIO, LIFTING = range(16, 19)
+STATS = 19
 
 openai.api_key = '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'
 
@@ -78,21 +81,16 @@ def get_dest_lang(update: Update) -> str:
 async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, message: Optional[Message] = None) -> int:
     query = update.callback_query
     dest_lang = context.user_data['lang']
-    calorie_button = trans.translate_text(query_text="Activity Tracking", translator='google',
-                                          to_language=dest_lang)
-    workout_button = trans.translate_text(query_text="Workouts", translator='google',
-                                          to_language=dest_lang)
-    user_button = trans.translate_text(query_text="User Profile", translator='google',
-                                       to_language=dest_lang)
-    # more_button = trans.translate_text(query_text="More Features", translator='google',
-    # to_language=dest_lang)
-    main_menu = trans.translate_text(query_text="Main Menu:", translator='google',
-                                     to_language=dest_lang)
+    calorie_button = trans.translate_text(query_text="Activity Tracking", translator='google', to_language=dest_lang)
+    workout_button = trans.translate_text(query_text="Workouts", translator='google', to_language=dest_lang)
+    user_button = trans.translate_text(query_text="User Profile", translator='google', to_language=dest_lang)
+    stats_button = trans.translate_text(query_text="Stats", translator='google', to_language=dest_lang)
+    main_menu = trans.translate_text(query_text="Main Menu:", translator='google', to_language=dest_lang)
     keyboard = [
         [InlineKeyboardButton(calorie_button, callback_data='tracking')],
         [InlineKeyboardButton(workout_button, callback_data='workouts')],
-        [InlineKeyboardButton(user_button, callback_data='user_profile')]
-        # [InlineKeyboardButton(more_button, callback_data='more_features')]
+        [InlineKeyboardButton(user_button, callback_data='user_profile')],
+        [InlineKeyboardButton(stats_button, callback_data='stats')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     if message:
@@ -143,7 +141,42 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return WORKOUT_AREA
     elif choice == 'user_profile':
         return await user_profile(update, context, query.message)
+    elif choice == 'stats':
+        steps = trans.translate_text(query_text='Steps', translator='google', to_language=dest_lang)
+        weight = trans.translate_text(query_text='Weight', translator='google', to_language=dest_lang)
+        workouts = trans.translate_text(query_text='Workouts', translator='google', to_language=dest_lang)
+        kcal = trans.translate_text(query_text='Calories', translator='google', to_language=dest_lang)
+        mes = trans.translate_text(query_text='Statistics for which parameter you would like to see?',
+                                   translator='google', to_language=dest_lang)
+        stats_keyboard = [
+            [InlineKeyboardButton(steps, callback_data='steps'),
+             InlineKeyboardButton(weight, callback_data='weight')],
+            [InlineKeyboardButton(workouts, callback_data='workouts'),
+             InlineKeyboardButton(kcal, callback_data='kcal')]
+        ]
+        stats_markup = InlineKeyboardMarkup(stats_keyboard)
+        await query.message.reply_text(mes, reply_markup=stats_markup)
+        return STATS
     return MAIN_MENU  # Remain in MAIN_MENU state for unrecognized choices
+
+
+async def stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    user = query.from_user
+    dest_lang = context.user_data['lang']
+    choice = query.data
+    dates, values = await get_stats(user.id, choice)
+    if not os.path.exists("images"):
+        os.mkdir("images")
+    sns.set_theme()
+    fig = sns.lineplot(x=dates, y=values)
+    plt.xlabel("Dates")
+    plt.ylabel("Values")
+    plt.title(f"Dynamics of {choice}")
+    plt.savefig(f"images/fig_{user.id}.png")
+    plt.figure().clear()
+    await context.bot.sendPhoto(user.id, f"images/fig_{user.id}.png")
+    return await show_main_menu(update, context)
 
 
 async def tracking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -663,7 +696,7 @@ async def add_record(user_id, type, value):
     connection.close()
 
 
-async def get_user(user_id):
+async def get_user(user_id) -> list or None:
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
@@ -674,14 +707,14 @@ async def get_user(user_id):
     if user_data is not None:
         for user in user_data:
             keys = (
-                'user_id', 'gender', 'height', 'weight', 'steps', 'workout_frequency', 'bmr', 'age'
+                'user_id', 'gender', 'birth_dt', 'height', 'weight'
             )
             res.append(dict(zip(keys, user)))
         return res
     return None
 
 
-async def get_workouts(user_id):
+async def get_workouts(user_id) -> list:
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     cursor.execute("SELECT sum(value) FROM tracking WHERE user_id=? and type='cardio' and date=date('now')", (user_id,))
@@ -690,20 +723,43 @@ async def get_workouts(user_id):
                    (user_id,))
     lifting = cursor.fetchone()
     conn.close()
-
+    if cardio is None:
+        cardio = [0]
+    if lifting is None:
+        lifting = [0]
     return [cardio[0], lifting[0]]
 
 
+async def get_stats(user_id, choice):
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    if choice == 'workouts':
+        cursor.execute(
+            "SELECT date, sum(value) FROM tracking WHERE user_id=? and (type='cardio' or type='lifting') GROUP BY date",
+            (user_id,))
+    else:
+        cursor.execute("SELECT date, sum(value) FROM tracking WHERE user_id=? and type=? GROUP BY date",
+                       (user_id, choice))
+    tuples = cursor.fetchall()
+    dates = list()
+    values = list()
+    for d, v in tuples:
+        dates.append(d)
+        values.append(v)
+    return [dates, values]
+
+
 def main() -> None:
-    application = Application.builder().token("6668637502:AAEp-lxUpp2f3XKghLzeDSClw7ALZ6Ll0xY").build() # нужный
-    # application = Application.builder().token("6520497677:AAH2QjNPwcqvYA558rJsSHOBW-RIDK6HX3Y").build()
+    # application = Application.builder().token("6668637502:AAEp-lxUpp2f3XKghLzeDSClw7ALZ6Ll0xY").build() # нужный
+    application = Application.builder().token("6520497677:AAH2QjNPwcqvYA558rJsSHOBW-RIDK6HX3Y").build()
 
     create_database_and_table()
+    # print(get_stats(626846493, 'workouts'))
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            MAIN_MENU: [CallbackQueryHandler(main_menu_callback, pattern='^(tracking|workouts|user_profile)$')],
+            MAIN_MENU: [CallbackQueryHandler(main_menu_callback, pattern='^(tracking|workouts|user_profile|stats)$')],
             GENDER: [CallbackQueryHandler(gender_callback, pattern='^(male|female)$')],
             HEIGHT: [MessageHandler(filters.TEXT & ~filters.COMMAND, height_callback)],
             WEIGHT: [MessageHandler(filters.TEXT & ~filters.COMMAND, weight_callback)],
@@ -723,6 +779,7 @@ def main() -> None:
             KCAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, kcal_callback)],
             CARDIO: [MessageHandler(filters.TEXT & ~filters.COMMAND, cardio_callback)],
             LIFTING: [MessageHandler(filters.TEXT & ~filters.COMMAND, lifting_callback)],
+            STATS: [CallbackQueryHandler(stats_callback, pattern='^(steps|weight|workouts|kcal)$')],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )

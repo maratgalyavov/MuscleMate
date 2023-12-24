@@ -17,12 +17,14 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, mes
     stats_button = trans.translate_text(query_text="Stats", translator='google', to_language=dest_lang)
     nutrition_button = trans.translate_text(query_text="Nutrition", translator='google', to_language=dest_lang)
     main_menu = trans.translate_text(query_text="Main Menu:", translator='google', to_language=dest_lang)
+    funding_button = trans.translate_text(query_text="Support the developers", translator='google', to_language=dest_lang)
     keyboard = [
         [InlineKeyboardButton(calorie_button, callback_data='tracking')],
         [InlineKeyboardButton(workout_button, callback_data='workouts')],
         [InlineKeyboardButton(user_button, callback_data='user_profile')],
         [InlineKeyboardButton(stats_button, callback_data='stats')],
-        [InlineKeyboardButton(nutrition_button, callback_data='nutrition')]
+        [InlineKeyboardButton(nutrition_button, callback_data='nutrition')],
+        [InlineKeyboardButton(funding_button, url='https://www.tinkoff.ru/cf/3mvrQU4wHFX')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     if message:

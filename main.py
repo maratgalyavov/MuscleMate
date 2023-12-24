@@ -6,7 +6,7 @@ from telegram.ext import (
     ConversationHandler,
     MessageHandler,
     filters,
-    CallbackQueryHandler,
+    CallbackQueryHandler
 )
 
 from db import create_database_and_table, add_user_to_database, add_record, get_user, get_workouts, get_stats
@@ -14,7 +14,7 @@ from handlers import gender_callback, age_callback, height_callback, weight_call
     workout_type_callback
 from activity import tracking_callback, kcal_callback, cardio_callback, lifting_callback, steps_callback, stats_callback
 import config
-from menu_handler import main_menu_callback
+from menu_handler import main_menu_callback, show_main_menu
 from nutrition import nutrition_callback, plan_callback, counting_callback
 from profile_handler import user_profile_callback
 from workouts import muscle_group_callback, feedback_callback, intensity_callback, workout_area_callback, cancel
@@ -68,7 +68,6 @@ def main() -> None:
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-
     application.add_handler(conv_handler)
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)

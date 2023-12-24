@@ -46,7 +46,7 @@ async def add_user_to_database(user_id, gender, birth_dt, height, weight, bmr):
     connection.close()
 
 
-def add_record(user_id, type, value):
+async def add_record(user_id, type, value):
     """
     Adding activity record.
     """

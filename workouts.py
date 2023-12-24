@@ -96,57 +96,60 @@ async def intensity_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     Callback for selecting workout intensity, generates and translates workout plan.
     """
     from main import logger
-    user = update.effective_user
-    dest_lang = context.user_data['lang']
-    query = update.callback_query
-    intensity = query.data
-    logger.info(f"User {user.id} selected intensity: {intensity}")
-    muscle_group = context.user_data['muscle_group']
+    try:
+        user = update.effective_user
+        dest_lang = context.user_data['lang']
+        query = update.callback_query
+        intensity = query.data
+        logger.info(f"User {user.id} selected intensity: {intensity}")
+        muscle_group = context.user_data['muscle_group']
 
-    proc_mes = trans.translate_text(query_text='Processing your request. This may take a couple of minutes...',
-                                    translator='google', to_language=dest_lang)
-    feedback_mes = trans.translate_text(query_text='How did you like the workout plan?', translator='google',
-                                        to_language=dest_lang)
+        proc_mes = trans.translate_text(query_text='Processing your request. This may take a couple of minutes...',
+                                        translator='google', to_language=dest_lang)
+        feedback_mes = trans.translate_text(query_text='How did you like the workout plan?', translator='google',
+                                            to_language=dest_lang)
 
-    await context.bot.send_chat_action(chat_id=query.message.chat_id, action='typing')
+        await context.bot.send_chat_action(chat_id=query.message.chat_id, action='typing')
 
-    processing_message = await query.message.reply_text(proc_mes)
+        processing_message = await query.message.reply_text(proc_mes)
 
-    async with httpx.AsyncClient(timeout=120000.0) as client:  # Use httpx.AsyncClient to make asynchronous requests
-        if muscle_group in ['chest', 'back', 'legs', 'arms', 'butt', 'abs']:
-            # Single muscle group workout request
-            request_content = f"Provide a workout plan for {muscle_group} muscles with {intensity} intensity."
-        else:
-            # Compound workout request
-            request_content = f"Provide a {muscle_group} workout plan with {intensity} intensity."
+        async with httpx.AsyncClient(timeout=120000.0) as client:  # Use httpx.AsyncClient to make asynchronous requests
+            if muscle_group in ['chest', 'back', 'legs', 'arms', 'butt', 'abs']:
+                # Single muscle group workout request
+                request_content = f"Provide a workout plan for {muscle_group} muscles with {intensity} intensity."
+            else:
+                # Compound workout request
+                request_content = f"Provide a {muscle_group} workout plan with {intensity} intensity."
 
-        response = await client.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {openai.api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "gpt-3.5-turbo",
-                "messages": [
-                    {"role": "system", "content": "You are a fitness coach."},
-                    {"role": "user", "content": request_content}
-                ],
-            },
-        )
-    response_data = response.json()
-    workout_suggestion = response_data['choices'][0]['message']['content'].strip()
-    workout_suggestion = trans.translate_text(query_text=workout_suggestion, translator='google',
-                                              to_language=dest_lang)
-    await processing_message.edit_text(workout_suggestion)
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {openai.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "gpt-3.5-turbo",
+                    "messages": [
+                        {"role": "system", "content": "You are a fitness coach."},
+                        {"role": "user", "content": request_content}
+                    ],
+                },
+            )
+        response_data = response.json()
+        workout_suggestion = response_data['choices'][0]['message']['content'].strip()
+        workout_suggestion = trans.translate_text(query_text=workout_suggestion, translator='google',
+                                                  to_language=dest_lang)
+        await processing_message.edit_text(workout_suggestion)
 
-    feedback_keyboard = [
-        [InlineKeyboardButton("Good", callback_data='good'),
-         InlineKeyboardButton("Bad", callback_data='bad')]
-    ]
-    feedback_markup = InlineKeyboardMarkup(feedback_keyboard)
-    await query.message.reply_text(feedback_mes, reply_markup=feedback_markup)
-    return config.FEEDBACK
+        feedback_keyboard = [
+            [InlineKeyboardButton("Good", callback_data='good'),
+             InlineKeyboardButton("Bad", callback_data='bad')]
+        ]
+        feedback_markup = InlineKeyboardMarkup(feedback_keyboard)
+        await query.message.reply_text(feedback_mes, reply_markup=feedback_markup)
+        return config.FEEDBACK
+    except Exception as e:
+        logger.error(f"Error in muscle_group_callback: {e}")
 
 
 async def feedback_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

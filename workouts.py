@@ -113,7 +113,7 @@ async def intensity_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         processing_message = await query.message.reply_text(proc_mes)
 
-        async with httpx.AsyncClient(timeout=120000.0) as client:  # Use httpx.AsyncClient to make asynchronous requests
+        async with httpx.AsyncClient(timeout=12000000.0) as client:  # Use httpx.AsyncClient to make asynchronous requests
             if muscle_group in ['chest', 'back', 'legs', 'arms', 'butt', 'abs']:
                 # Single muscle group workout request
                 request_content = f"Provide a workout plan for {muscle_group} muscles with {intensity} intensity."

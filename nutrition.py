@@ -139,7 +139,7 @@ async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         processing_message = await query.message.reply_text(proc_mes)
 
         async with httpx.AsyncClient(
-                timeout=1200000.0) as client:  # Use httpx.AsyncClient to make asynchronous requests
+                timeout=12000000.0) as client:  # Use httpx.AsyncClient to make asynchronous requests
             request_content = f"Provide a detailed easy to follow healthy meal plan for {duration} days."
             response = await client.post(
                 "https://api.openai.com/v1/chat/completions",

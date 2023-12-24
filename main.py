@@ -31,10 +31,8 @@ logger.addHandler(handler)
 
 def main() -> None:
     application = Application.builder().token(config.telegram_key).build()  # нужный
-    # application = Application.builder().token("6520497677:AAH2QjNPwcqvYA558rJsSHOBW-RIDK6HX3Y").build()
 
     create_database_and_table()
-    # print(get_stats(626846493, 'workouts'))
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],

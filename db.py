@@ -79,9 +79,9 @@ async def get_workouts(user_id) -> list:
                    (user_id,))
     lifting = cursor.fetchone()
     conn.close()
-    if cardio is None:
+    if cardio[0] is None:
         cardio = [0]
-    if lifting is None:
+    if lifting[0] is None:
         lifting = [0]
     return [cardio[0], lifting[0]]
 

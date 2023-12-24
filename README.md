@@ -1,6 +1,6 @@
 # MuscleMate
 
-![bot_pic](mate.jpg)
+![bot_pic](MuscleMate.jpg)
 
 ### Описание:
 

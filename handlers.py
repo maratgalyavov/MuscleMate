@@ -148,6 +148,9 @@ async def weight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def workout_frequency_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Processing user's workout frequency.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = context.user_data['lang']
@@ -166,9 +169,7 @@ async def workout_frequency_callback(update: Update, context: ContextTypes.DEFAU
             logger.info(f"Workout frequency of {user.id}: {workout_frequency}")
             save_user_data(user.id, context.user_data)
             user_data = context.user_data
-            await add_user_to_database(user.id, user_data['gender'], user_data['height'], user_data['weight'],
-                                       user_data['steps'], user_data['workout_frequency'], user_data['bmr'],
-                                       user_data['age'])
+            await add_user_to_database(user.id, user_data['gender'], user_data['height'], user_data['weight'], user_data['age'], user_data['bmr'])
             await calculate_bmr(update, context)
             await update.message.reply_text(main_menu_mes)
             return await show_main_menu(update, context)
@@ -185,6 +186,9 @@ async def workout_frequency_callback(update: Update, context: ContextTypes.DEFAU
 
 
 async def workout_type_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Processing user's most frequent workout type.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = context.user_data['lang']
@@ -195,9 +199,7 @@ async def workout_type_callback(update: Update, context: ContextTypes.DEFAULT_TY
     save_user_data(user.id, context.user_data)  # Save all collected data to file
     await calculate_bmr(update, context)
     user_data = context.user_data
-    await add_user_to_database(user.id, user_data['gender'], user_data['height'], user_data['weight'],
-                               user_data['steps'],
-                               user_data['workout_frequency'], user_data['bmr'], user_data['age'])
+    await add_user_to_database(user.id, user_data['gender'], user_data['height'], user_data['weight'], user_data['age'], user_data['bmr'])
     transition_mes = trans.translate_text(query_text="Transitioning to the main menu.", translator='google',
                                           to_language=dest_lang)
     await update.message.reply_text(transition_mes)

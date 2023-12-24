@@ -15,12 +15,14 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, mes
     workout_button = trans.translate_text(query_text="Workouts", translator='google', to_language=dest_lang)
     user_button = trans.translate_text(query_text="User Profile", translator='google', to_language=dest_lang)
     stats_button = trans.translate_text(query_text="Stats", translator='google', to_language=dest_lang)
+    nutrition_button = trans.translate_text(query_text="Nutrition", translator='google', to_language=dest_lang)
     main_menu = trans.translate_text(query_text="Main Menu:", translator='google', to_language=dest_lang)
     keyboard = [
         [InlineKeyboardButton(calorie_button, callback_data='tracking')],
         [InlineKeyboardButton(workout_button, callback_data='workouts')],
         [InlineKeyboardButton(user_button, callback_data='user_profile')],
-        [InlineKeyboardButton(stats_button, callback_data='stats')]
+        [InlineKeyboardButton(stats_button, callback_data='stats')],
+        [InlineKeyboardButton(nutrition_button, callback_data='nutrition')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     if message:
@@ -87,4 +89,18 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         stats_markup = InlineKeyboardMarkup(stats_keyboard)
         await query.message.reply_text(mes, reply_markup=stats_markup)
         return config.STATS
+    elif choice == 'nutrition':
+        planning_button = trans.translate_text(query_text="Meal Planning", translator='google',
+                                             to_language=dest_lang)
+        counting_button = trans.translate_text(query_text="Calorie counting", translator='google',
+                                               to_language=dest_lang)
+        nutrition_mes = trans.translate_text(query_text="What are you looking for?", translator='google',
+                                                to_language=dest_lang)
+        nutrition_keyboard = [
+            [InlineKeyboardButton(planning_button, callback_data='meal_planning'),
+             InlineKeyboardButton(counting_button, callback_data='calorie_counting')]
+        ]
+        nutrition_markup = InlineKeyboardMarkup(nutrition_keyboard)
+        await query.message.reply_text(nutrition_mes + ":", reply_markup=nutrition_markup)
+        return config.NUTRITION
     return config.MAIN_MENU  # Remain in MAIN_MENU state for unrecognized choices

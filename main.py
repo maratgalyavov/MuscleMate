@@ -15,6 +15,7 @@ from handlers import gender_callback, age_callback, height_callback, weight_call
 from activity import tracking_callback, kcal_callback, cardio_callback, lifting_callback, steps_callback, stats_callback
 import config
 from menu_handler import main_menu_callback
+from nutrition import nutrition_callback, plan_callback, counting_callback
 from profile_handler import user_profile_callback
 from workouts import muscle_group_callback, feedback_callback, intensity_callback, workout_area_callback, cancel
 
@@ -39,7 +40,7 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             config.MAIN_MENU: [
-                CallbackQueryHandler(main_menu_callback, pattern='^(tracking|workouts|user_profile|stats)$')],
+                CallbackQueryHandler(main_menu_callback, pattern='^(tracking|workouts|user_profile|stats|nutrition)$')],
             config.GENDER: [CallbackQueryHandler(gender_callback, pattern='^(male|female)$')],
             config.HEIGHT: [MessageHandler(filters.TEXT & ~filters.COMMAND, height_callback)],
             config.WEIGHT: [MessageHandler(filters.TEXT & ~filters.COMMAND, weight_callback)],
@@ -61,6 +62,9 @@ def main() -> None:
             config.CARDIO: [MessageHandler(filters.TEXT & ~filters.COMMAND, cardio_callback)],
             config.LIFTING: [MessageHandler(filters.TEXT & ~filters.COMMAND, lifting_callback)],
             config.STATS: [CallbackQueryHandler(stats_callback, pattern='^(steps|weight|workouts|kcal)$')],
+            config.NUTRITION: [CallbackQueryHandler(nutrition_callback, pattern='^(meal_planning|calorie_counting)$')],
+            config.PLAN: [CallbackQueryHandler(plan_callback, pattern='^(1|3|5|7)$')],
+            config.COOKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, counting_callback)]
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )

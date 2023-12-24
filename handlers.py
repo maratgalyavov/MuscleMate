@@ -117,9 +117,10 @@ async def weight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             logger.info(f"Weight of {user.id}: {weight}")
             context.user_data['weight'] = weight
             save_user_data(user.id, context.user_data)
+            await calculate_bmr(update, context)
             user_data = context.user_data
             await add_user_to_database(user.id, user_data['gender'], user_data['birth_dt'], user_data['height'],
-                                       user_data['weight'])
+                                       user_data['weight'], user_data['bmr'])
             await update.message.reply_text(menu_mes)
             return await show_main_menu(update, context)
         else:

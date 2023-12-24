@@ -18,7 +18,8 @@ def get_dest_lang(update: Update) -> str:
 
 async def calculate_bmr(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Assuming age is already collected and saved in user_data
-    age = context.user_data.get('age', 25)  # Replace 25 with actual age
+    age = context.user_data.get('birth_dt')  # Replace 25 with actual age
+    age = 2023 - int(age[0:4])
     gender = context.user_data.get('gender')
     height = float(str(context.user_data.get('height')).replace(',', '.'))
     weight = float(str(context.user_data.get('weight')).replace(',', '.'))
@@ -28,5 +29,5 @@ async def calculate_bmr(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:  # Assuming female for any other input
         bmr = 10 * weight + 6.25 * height - 5 * age - 161
 
-    context.user_data['bmr'] = bmr
+    context.user_data['bmr'] = int(bmr)
     save_user_data(update.effective_user.id, context.user_data)  # Save updated data to file

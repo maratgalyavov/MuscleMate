@@ -8,6 +8,9 @@ from user_data import save_user_data
 
 
 def get_dest_lang(update: Update) -> str:
+    """
+    Determines the user's language preference based on their Telegram settings or defaults to English.
+    """
     if update.message is None:
         return dest_lang
     dl = update.message.from_user.language_code
@@ -17,8 +20,11 @@ def get_dest_lang(update: Update) -> str:
 
 
 async def calculate_bmr(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Calculates and saves the user's Basal Metabolic Rate (BMR) based on stored personal data.
+    """
     # Assuming age is already collected and saved in user_data
-    age = context.user_data.get('birth_dt')  # Replace 25 with actual age
+    age = context.user_data.get('birth_dt')
     age = 2023 - int(age[0:4])
     gender = context.user_data.get('gender')
     height = float(str(context.user_data.get('height')).replace(',', '.'))

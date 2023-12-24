@@ -14,6 +14,9 @@ from db import add_record
 
 
 async def nutrition_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Handles nutrition-related callbacks, offering meal planning or description input for calorie counting.
+    """
     from main import logger
     user = update.effective_user
     dest_lang = context.user_data['lang']
@@ -49,6 +52,9 @@ async def nutrition_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def counting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Processes user's meal description for calorie counting and provides feedback options.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = context.user_data['lang']
@@ -105,6 +111,9 @@ async def counting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Generates a meal plan based on selected duration and provides feedback options.
+    """
     from main import logger
     user = update.effective_user
     dest_lang = context.user_data['lang']
@@ -155,6 +164,9 @@ async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
 
 async def feedback_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Handles feedback for the nutrition or meal plan response and navigates back to the main menu.
+    """
     from main import logger
     user = update.effective_user
     dest_lang = context.user_data['lang']
@@ -168,6 +180,9 @@ async def feedback_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Manages cancellation of the current conversation and sends a farewell message to the user.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = context.user_data['lang']

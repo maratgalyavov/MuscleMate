@@ -23,3 +23,4 @@ translators==5.8.9
 tqdm==4.66.1
 urllib3==2.0.6
 yarl==1.9.2
+pytest==7.4.3

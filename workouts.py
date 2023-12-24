@@ -12,6 +12,9 @@ from menu_handler import show_main_menu
 
 
 async def muscle_group_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Callback for selecting a muscle group, displaying intensity options to the user.
+    """
     from main import logger
     user = update.effective_user
     dest_lang = context.user_data['lang']
@@ -39,6 +42,9 @@ async def muscle_group_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def workout_area_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Callback for selecting workout area, offering single or compound muscle group choices.
+    """
     from main import logger
     user = update.effective_user
     dest_lang = context.user_data['lang']
@@ -86,6 +92,9 @@ async def workout_area_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def intensity_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Callback for selecting workout intensity, generates and translates workout plan.
+    """
     from main import logger
     user = update.effective_user
     dest_lang = context.user_data['lang']
@@ -141,6 +150,9 @@ async def intensity_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def feedback_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Callback for user feedback on workout plan, logs feedback and returns to main menu.
+    """
     from main import logger
     user = update.effective_user
     dest_lang = context.user_data['lang']
@@ -154,6 +166,9 @@ async def feedback_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Handles conversation cancellation, logs event and sends farewell message to user.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = context.user_data['lang']

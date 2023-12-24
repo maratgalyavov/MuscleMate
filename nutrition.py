@@ -6,9 +6,11 @@ from telegram.ext import (
 import openai
 import httpx
 import translators as trans
+import re
 
 import config
 from menu_handler import show_main_menu
+from db import add_record
 
 
 async def nutrition_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -45,6 +47,7 @@ async def nutrition_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await query.message.reply_text(meal_description)
         return config.COOKING
 
+
 async def counting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     from main import logger
     user = update.message.from_user
@@ -64,7 +67,8 @@ async def counting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     processing_message = await update.message.reply_text(proc_mes)
 
     async with httpx.AsyncClient(timeout=120000000.0) as client:  # Use httpx.AsyncClient to make asynchronous requests
-        request_content = f"aproximate calorie count of {meal_description}, your response should contain only an integerr representig calorie estimate and absolutely, i repeat, absolutely no letters"
+        request_content = f"aproximate calorie count of {meal_description}, your response should contain only an " \
+                          f"integerr representig calorie estimate and absolutely, i repeat, absolutely no letters "
         response = await client.post(
             "https://api.openai.com/v1/chat/completions",
             headers={
@@ -83,15 +87,22 @@ async def counting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     workout_suggestion = response_data['choices'][0]['message']['content'].strip()
     workout_suggestion = trans.translate_text(query_text=workout_suggestion, translator='google',
                                               to_language=dest_lang)
-    await processing_message.edit_text(workout_suggestion)
+    kcal = re.findall('[0-9]+', workout_suggestion)[0]
+    mes = trans.translate_text(query_text=f'This meal estimation is {kcal} kilocalories', translator='google',
+                               to_language=dest_lang)
+    await processing_message.edit_text(mes)
+    await add_record(user.id, 'kcal', int(kcal))
 
     feedback_keyboard = [
-        [InlineKeyboardButton("Good", callback_data='good'),
-         InlineKeyboardButton("Bad", callback_data='bad')]
+        [InlineKeyboardButton(trans.translate_text(query_text='Good', translator='google',
+                                                   to_language=dest_lang), callback_data='good'),
+         InlineKeyboardButton(trans.translate_text(query_text='Bad', translator='google',
+                                                   to_language=dest_lang), callback_data='bad')]
     ]
     feedback_markup = InlineKeyboardMarkup(feedback_keyboard)
     await update.message.reply_text(feedback_mes, reply_markup=feedback_markup)
     return config.FEEDBACK
+
 
 async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     from main import logger
@@ -133,8 +144,10 @@ async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     await processing_message.edit_text(workout_suggestion)
 
     feedback_keyboard = [
-        [InlineKeyboardButton("Good", callback_data='good'),
-         InlineKeyboardButton("Bad", callback_data='bad')]
+        [InlineKeyboardButton(trans.translate_text(query_text='Good', translator='google',
+                                                   to_language=dest_lang), callback_data='good'),
+         InlineKeyboardButton(trans.translate_text(query_text='Bad', translator='google',
+                                                   to_language=dest_lang), callback_data='bad')]
     ]
     feedback_markup = InlineKeyboardMarkup(feedback_keyboard)
     await query.message.reply_text(feedback_mes, reply_markup=feedback_markup)

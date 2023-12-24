@@ -1,20 +1,25 @@
 import pytest
 # from telegram import Update, Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, User
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch, ANY
 import json
 # from sqlalchemy import create_engine
 import sqlite3
 import os
+from telegram.ext import ConversationHandler
+
+# import config
 # import matplotlib.pyplot as plt
 # import seaborn as sns
 
-
-from main import load_user_data, save_user_data, get_dest_lang, show_main_menu, main_menu_callback, tracking_callback, \
-    kcal_callback, cardio_callback, lifting_callback, start, gender_callback, age_callback, height_callback, \
-    weight_callback, steps_callback, workout_frequency_callback, workout_type_callback, muscle_group_callback, \
-    workout_area_callback, intensity_callback, feedback_callback, user_profile, user_profile_callback, calculate_bmr, \
-    cancel, create_database_and_table, add_user_to_database, get_user, get_workouts, stats_callback, get_stats, \
-    add_record
+from user_data import load_user_data, save_user_data
+from utils import get_dest_lang, calculate_bmr
+from profile_handler import user_profile, user_profile_callback
+from menu_handler import show_main_menu, main_menu_callback
+from handlers import age_callback, gender_callback, start, height_callback, weight_callback, workout_frequency_callback, workout_type_callback
+from activity import tracking_callback, kcal_callback, cardio_callback, lifting_callback, steps_callback, stats_callback
+from nutrition import nutrition_callback, cancel
+from workouts import muscle_group_callback, feedback_callback, intensity_callback, workout_area_callback
+from db import create_database_and_table, add_user_to_database, get_user, get_workouts, get_stats, add_record
 
 
 USER_DATA_FILE = "user_data_test.json"
@@ -131,7 +136,7 @@ def test_create_database_and_table(test_db_path):
     cursor.execute("PRAGMA table_info(users);")
     columns_users = cursor.fetchall()
 
-    assert len(columns_users) == 5
+    assert len(columns_users) == 6
     assert columns_users[0][1] == 'user_id'
     assert columns_users[1][1] == 'gender'
     assert columns_users[2][1] == 'birth_dt'
@@ -168,6 +173,7 @@ async def test_add_user_to_database(connection_mock):
     birth_dt = '1990-01-01'
     height = 180
     weight = 70
+    bmr = 0
 
     with patch('sqlite3.connect', new_callable=MagicMock) as mock_connect:
         mock_cursor = MagicMock()
@@ -175,7 +181,7 @@ async def test_add_user_to_database(connection_mock):
         mock_cursor.execute.side_effect = mock_execute
         mock_connect.return_value.__enter__.return_value.cursor.return_value = mock_cursor
 
-        await add_user_to_database(user_id, gender, birth_dt, height, weight)
+        await add_user_to_database(user_id, gender, birth_dt, height, weight, bmr)
 
     mock_connect.assert_called_once_with('users.db')
 
@@ -258,6 +264,7 @@ async def test_get_workouts(connection_mock):
 def connection_mock():
     return MagicMock()
 
+
 @pytest.mark.asyncio
 async def test_get_stats(connection_mock):
     user_id = 123
@@ -276,3 +283,40 @@ async def test_get_stats(connection_mock):
         "SELECT date, sum(value) FROM tracking WHERE user_id=? and type=? GROUP BY date", (user_id, choice)
     )
 
+
+@pytest.mark.asyncio
+async def test_calculate_bmr(context_mock, update_mock):
+    context_mock.user_data = {
+        'birth_dt': '1990-01-01',
+        'gender': 'male',
+        'height': 180,
+        'weight': 70
+    }
+
+    with patch('user_data.save_user_data') as mock_save_user_data:
+        await calculate_bmr(update_mock, context_mock)
+
+    mock_save_user_data(update_mock.effective_user.id, context_mock.user_data)
+
+    assert 'bmr' in context_mock.user_data
+    assert isinstance(context_mock.user_data['bmr'], int)
+
+
+@pytest.mark.asyncio
+async def test_cancel():
+    context_mock = AsyncMock()
+    update_mock = AsyncMock()
+    message_mock = AsyncMock()
+
+    user_id = 123
+    dest_lang = 'en'
+    context_mock.user_data = {'lang': dest_lang}
+    update_mock.message.from_user.id = user_id
+
+    with patch('main.logger') as mock_logger:
+        with patch('telegram.Message.reply_text') as mock_reply_text:
+            result = await cancel(update_mock, context_mock)
+
+    mock_logger.info.assert_called_once_with(f"User {user_id} canceled the conversation.")
+
+    assert result == ConversationHandler.END

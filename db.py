@@ -2,6 +2,9 @@ import sqlite3
 
 
 def create_database_and_table():
+    """
+    Creating database and two tables: for general info and for tracking records.
+    """
     connection = sqlite3.connect('users.db')
     cursor = connection.cursor()
     cursor.execute('''
@@ -29,6 +32,9 @@ def create_database_and_table():
 
 
 async def add_user_to_database(user_id, gender, birth_dt, height, weight, bmr):
+    """
+    Adding information about a user to database.
+    """
     connection = sqlite3.connect('users.db')
     cursor = connection.cursor()
 
@@ -41,6 +47,9 @@ async def add_user_to_database(user_id, gender, birth_dt, height, weight, bmr):
 
 
 def add_record(user_id, type, value):
+    """
+    Adding activity record.
+    """
     connection = sqlite3.connect('users.db')
     cursor = connection.cursor()
 
@@ -53,6 +62,9 @@ def add_record(user_id, type, value):
 
 
 async def get_user(user_id) -> list or None:
+    """
+    Getting user's information from database.
+    """
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
@@ -71,6 +83,9 @@ async def get_user(user_id) -> list or None:
 
 
 async def get_workouts(user_id) -> list:
+    """
+    Getting workouts duration for today.
+    """
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     cursor.execute("SELECT sum(value) FROM tracking WHERE user_id=? and type='cardio' and date=date('now')", (user_id,))
@@ -87,6 +102,9 @@ async def get_workouts(user_id) -> list:
 
 
 async def get_stats(user_id, choice):
+    """
+    Getting statistics of activity for further visualisation.
+    """
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     if choice == 'workouts':

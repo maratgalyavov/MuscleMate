@@ -9,7 +9,9 @@ import translators as trans
 
 
 async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, message: Optional[Message] = None) -> int:
-    # user_data = context.user_data
+    """
+    Returning user's profile (general information).
+    """
     user_data = (await get_user(update.effective_user.id))[-1]
     dest_lang = context.user_data['lang']
     gender = trans.translate_text(query_text='Gender', translator='google', to_language=dest_lang)
@@ -36,6 +38,9 @@ async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, messa
 
 
 async def user_profile_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Returning to main menu.
+    """
     from menu_handler import show_main_menu
     query = update.callback_query
     choice = query.data

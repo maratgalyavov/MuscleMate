@@ -9,6 +9,9 @@ from profile_handler import user_profile
 
 
 async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, message: Optional[Message] = None) -> int:
+    """
+    Showing main menu with a keyboard.
+    """
     query = update.callback_query
     dest_lang = context.user_data['lang']
     calorie_button = trans.translate_text(query_text="Activity Tracking", translator='google', to_language=dest_lang)
@@ -38,6 +41,9 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, mes
 
 
 async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Handling user's choice in main menu.
+    """
     query = update.callback_query
     dest_lang = context.user_data['lang']
     choice = query.data

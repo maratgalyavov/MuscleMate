@@ -17,6 +17,10 @@ from utils import calculate_bmr, get_dest_lang
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Starting point of conversation. If user is new, starts collection of basic information.
+    Otherwise, main menu is shown.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = get_dest_lang(update)
@@ -42,6 +46,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def gender_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Processing user's choice of gender and asking for birthdate.
+    """
     from main import logger
     query = update.callback_query
     choice = query.data
@@ -56,6 +63,9 @@ async def gender_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def age_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Processing birthdate and asking for height.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = context.user_data['lang']
@@ -65,8 +75,8 @@ async def age_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     height_mes = trans.translate_text(query_text="What is your height in cm?", translator='google',
                                       to_language=dest_lang)
     try:
-        age = age.split('.')  # Make sure age is a valid number
-        if 1920 < int(age[2]) < 2020:  # Sanity check for age
+        age = age.split('.')
+        if 1920 < int(age[2]) < 2020:  # Sanity check
             logger.info(f"Birth date of {user.id}: {'.'.join(age)}")
             context.user_data['birth_dt'] = age[2] + '-' + age[1] + '-' + age[0]
             await update.message.reply_text(height_mes)
@@ -74,12 +84,15 @@ async def age_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         else:
             await update.message.reply_text(invalid_age_mes)
             return AGE  # Repeat the AGE state if the input is not valid
-    except ValueError or IndexError:
+    except (ValueError, IndexError):
         await update.message.reply_text(invalid_age_mes)
         return AGE
 
 
 async def height_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Processing height and asking for weight.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = context.user_data['lang']
@@ -104,6 +117,9 @@ async def height_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def weight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Processing weight, adding user to database. Then main menu is shown.
+    """
     from main import logger
     user = update.message.from_user
     dest_lang = context.user_data['lang']
@@ -129,60 +145,3 @@ async def weight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     except ValueError:
         await update.message.reply_text(invalid_weight_mes)
         return WEIGHT
-
-
-async def workout_frequency_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    from main import logger
-    user = update.message.from_user
-    dest_lang = context.user_data['lang']
-    workout_frequency = update.message.text
-    main_menu_mes = trans.translate_text(query_text="Transitioning to the main menu.", translator='google',
-                                         to_language=dest_lang)
-    invalid_workout_mes = trans.translate_text(query_text="Please enter a valid number of workouts.",
-                                               translator='google', to_language=dest_lang)
-    type_workout_mes = trans.translate_text(
-        query_text='What type of workouts do you usually do? (Cardio / Lifting / Both)',
-        translator='google', to_language=dest_lang)
-    try:
-        if int(workout_frequency) <= 0:
-            workout_frequency = max(0, int(workout_frequency))
-            context.user_data['workout_frequency'] = workout_frequency
-            logger.info(f"Workout frequency of {user.id}: {workout_frequency}")
-            save_user_data(user.id, context.user_data)
-            user_data = context.user_data
-            await add_user_to_database(user.id, user_data['gender'], user_data['height'], user_data['weight'],
-                                       user_data['steps'], user_data['workout_frequency'], user_data['bmr'],
-                                       user_data['age'])
-            await calculate_bmr(update, context)
-            await update.message.reply_text(main_menu_mes)
-            return await show_main_menu(update, context)
-        else:
-            workout_frequency = max(0, int(workout_frequency))
-            context.user_data['workout_frequency'] = workout_frequency
-            logger.info(f"Workout frequency of {user.id}: {workout_frequency}")
-            save_user_data(user.id, context.user_data)
-    except ValueError:
-        await update.message.reply_text(invalid_workout_mes)
-        return config.WORKOUT_FREQUENCY
-    await update.message.reply_text(type_workout_mes)
-    return config.WORKOUT_TYPE
-
-
-async def workout_type_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    from main import logger
-    user = update.message.from_user
-    dest_lang = context.user_data['lang']
-    workout_type = update.message.text
-    workout_type = trans.translate_text(query_text=workout_type, translator='google', to_language=dest_lang)
-    logger.info(f"Workout type of {user.id}: {workout_type}")
-    context.user_data['workout_type'] = workout_type.lower()
-    save_user_data(user.id, context.user_data)  # Save all collected data to file
-    await calculate_bmr(update, context)
-    user_data = context.user_data
-    await add_user_to_database(user.id, user_data['gender'], user_data['height'], user_data['weight'],
-                               user_data['steps'],
-                               user_data['workout_frequency'], user_data['bmr'], user_data['age'])
-    transition_mes = trans.translate_text(query_text="Transitioning to the main menu.", translator='google',
-                                          to_language=dest_lang)
-    await update.message.reply_text(transition_mes)
-    return await show_main_menu(update, context)

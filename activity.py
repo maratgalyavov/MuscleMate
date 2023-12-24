@@ -12,6 +12,9 @@ import os
 
 
 async def tracking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Handling user's choice of tracking and asking for relevant information.
+    """
     query = update.callback_query
     user = query.from_user
     dest_lang = context.user_data['lang']
@@ -48,6 +51,9 @@ async def tracking_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def kcal_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Getting number of kcal and adding a record to database.
+    """
     user = update.message.from_user
     dest_lang = context.user_data['lang']
     kcal = update.message.text
@@ -60,6 +66,9 @@ async def kcal_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
 
 async def cardio_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Getting cardio workout duration and adding a record to database.
+    """
     user = update.message.from_user
     dest_lang = context.user_data['lang']
     minutes = update.message.text
@@ -72,6 +81,9 @@ async def cardio_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def lifting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Getting lifting workout duration and adding a record to database.
+    """
     user = update.message.from_user
     dest_lang = context.user_data['lang']
     minutes = update.message.text
@@ -84,6 +96,9 @@ async def lifting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def steps_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Getting number of steps and adding a record to database.
+    """
     user = update.message.from_user
     dest_lang = context.user_data['lang']
     steps = update.message.text
@@ -96,6 +111,9 @@ async def steps_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """
+    Getting records according to user's choice and making a plot.
+    """
     query = update.callback_query
     user = query.from_user
     dest_lang = context.user_data['lang']

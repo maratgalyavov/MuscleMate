@@ -108,6 +108,7 @@ async def stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     plt.xlabel("Dates")
     plt.ylabel("Values")
     plt.title(f"Dynamics of {choice}")
+    plt.xticks(rotation=45)
     plt.savefig(f"images/fig_{user.id}.png")
     plt.figure().clear()
     await context.bot.sendPhoto(user.id, f"images/fig_{user.id}.png")

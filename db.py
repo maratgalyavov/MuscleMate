@@ -40,7 +40,7 @@ async def add_user_to_database(user_id, gender, birth_dt, height, weight, bmr):
     connection.close()
 
 
-async def add_record(user_id, type, value):
+def add_record(user_id, type, value):
     connection = sqlite3.connect('users.db')
     cursor = connection.cursor()
 
@@ -100,6 +100,6 @@ async def get_stats(user_id, choice):
     dates = list()
     values = list()
     for d, v in tuples:
-        dates.append(d)
+        dates.append(d[5:])
         values.append(v)
     return [dates, values]

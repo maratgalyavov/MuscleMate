@@ -93,23 +93,6 @@ async def steps_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                                translator='google', to_language=dest_lang)
     await update.message.reply_text(mes)
     return await show_main_menu(update, context)
-    # invalid_steps_mes = trans.translate_text(query_text="Please enter a valid number of steps.",
-    #                                          to_language=dest_lang)
-    # workout_mes = trans.translate_text(query_text='How many times do you workout per week?',
-    #                                    to_language=dest_lang)
-    # try:
-    #     steps = int(steps)
-    #     if 0 <= steps <= 100000:
-    #         logger.info(f"Average steps per day of {user.id}: {steps}")
-    #         context.user_data['steps'] = steps
-    #         await update.message.reply_text(workout_mes)
-    #         return WORKOUT_FREQUENCY
-    #     else:
-    #         await update.message.reply_text(invalid_steps_mes)
-    #         return STEPS
-    # except ValueError:
-    #     await update.message.reply_text(invalid_steps_mes)
-    #     return STEPS
 
 
 async def stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

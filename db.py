@@ -10,7 +10,8 @@ def create_database_and_table():
             gender TEXT,
             birth_dt DATE,
             height INTEGER,
-            weight INTEGER
+            weight INTEGER,
+            bmr INTEGER
         )
     ''')
 
@@ -27,13 +28,13 @@ def create_database_and_table():
     connection.close()
 
 
-async def add_user_to_database(user_id, gender, birth_dt, height, weight):
+async def add_user_to_database(user_id, gender, birth_dt, height, weight, bmr):
     connection = sqlite3.connect('users.db')
     cursor = connection.cursor()
 
     cursor.execute(
-        '''INSERT INTO users (user_id, gender, birth_dt, height, weight) VALUES (?, ?, ?, ?, ?)''',
-        (user_id, gender, birth_dt, height, weight))
+        '''INSERT INTO users (user_id, gender, birth_dt, height, weight, bmr) VALUES (?, ?, ?, ?, ?, ?)''',
+        (user_id, gender, birth_dt, height, weight, bmr))
 
     connection.commit()
     connection.close()
@@ -62,7 +63,7 @@ async def get_user(user_id) -> list or None:
     if user_data is not None:
         for user in user_data:
             keys = (
-                'user_id', 'gender', 'birth_dt', 'height', 'weight'
+                'user_id', 'gender', 'birth_dt', 'height', 'weight', 'bmr'
             )
             res.append(dict(zip(keys, user)))
         return res
@@ -78,9 +79,9 @@ async def get_workouts(user_id) -> list:
                    (user_id,))
     lifting = cursor.fetchone()
     conn.close()
-    if cardio is None:
+    if cardio[0] is None:
         cardio = [0]
-    if lifting is None:
+    if lifting[0] is None:
         lifting = [0]
     return [cardio[0], lifting[0]]
 

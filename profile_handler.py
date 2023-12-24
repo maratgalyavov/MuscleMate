@@ -22,10 +22,7 @@ async def user_profile(update: Update, context: ContextTypes.DEFAULT_TYPE, messa
         f"{height}: {user_data['height']} cm\n"
         f"{weight}: {user_data['weight']} kg\n"
         f"{birth_dt}: {user_data['birth_dt']}\n"
-        # f"{freq}: {user_data['workout_frequency']} "
-        # f"{tpw}\n"
-        # f"{wtype}: {user_data['workout_type']}\n"
-        # f"BMR: {user_data['bmr']} {kcal}"
+        f"BMR: {user_data['bmr']} kcal"
     )
     keyboard = [
         [InlineKeyboardButton(return_butt,

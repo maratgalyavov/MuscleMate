@@ -69,7 +69,6 @@ async def kcal_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         mes = trans.translate_text(query_text='try inputing again',
                                    translator='google', to_language=dest_lang)
         await update.message.reply_text(mes)
-        await query.message.reply_text(mes)
         return KCAL
 
 
@@ -92,7 +91,6 @@ async def cardio_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         mes = trans.translate_text(query_text='try inputing again',
                                    translator='google', to_language=dest_lang)
         await update.message.reply_text(mes)
-        await query.message.reply_text(mes)
         return CARDIO
 
 
@@ -115,7 +113,6 @@ async def lifting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         mes = trans.translate_text(query_text='try inputing again',
                                    translator='google', to_language=dest_lang)
         await update.message.reply_text(mes)
-        await query.message.reply_text(mes)
         return LIFTING
 
 
@@ -138,7 +135,6 @@ async def steps_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         mes = trans.translate_text(query_text='try inputing again',
                                    translator='google', to_language=dest_lang)
         await update.message.reply_text(mes)
-        await query.message.reply_text(mes)
         return STEPS
 
 

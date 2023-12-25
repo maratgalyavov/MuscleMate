@@ -54,60 +54,92 @@ async def kcal_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     """
     Getting number of kcal and adding a record to database.
     """
+    query = update.callback_query
     user = update.message.from_user
     dest_lang = context.user_data['lang']
-    kcal = update.message.text
-    kcal = int(kcal)
-    await add_record(user.id, 'kcal', kcal)
-    mes = trans.translate_text(query_text='Calories added successfully. Returning to main menu.',
-                               translator='google', to_language=dest_lang)
-    await update.message.reply_text(mes)
-    return await show_main_menu(update, context)
+    try:
+        kcal = update.message.text
+        kcal = int(kcal)
+        await add_record(user.id, 'kcal', kcal)
+        mes = trans.translate_text(query_text='Calories added successfully. Returning to main menu.',
+                                   translator='google', to_language=dest_lang)
+        await update.message.reply_text(mes)
+        return await show_main_menu(update, context)
+    except:
+        mes = trans.translate_text(query_text='try inputing again',
+                                   translator='google', to_language=dest_lang)
+        await update.message.reply_text(mes)
+        await query.message.reply_text(mes)
+        return KCAL
 
 
 async def cardio_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     Getting cardio workout duration and adding a record to database.
     """
+    query = update.callback_query
     user = update.message.from_user
     dest_lang = context.user_data['lang']
-    minutes = update.message.text
-    minutes = int(minutes)
-    await add_record(user.id, 'cardio', minutes)
-    mes = trans.translate_text(query_text='Workout added successfully. Returning to main menu.',
-                               translator='google', to_language=dest_lang)
-    await update.message.reply_text(mes)
-    return await show_main_menu(update, context)
+    try:
+        minutes = update.message.text
+        minutes = int(minutes)
+        await add_record(user.id, 'cardio', minutes)
+        mes = trans.translate_text(query_text='Workout added successfully. Returning to main menu.',
+                                   translator='google', to_language=dest_lang)
+        await update.message.reply_text(mes)
+        return await show_main_menu(update, context)
+    except:
+        mes = trans.translate_text(query_text='try inputing again',
+                                   translator='google', to_language=dest_lang)
+        await update.message.reply_text(mes)
+        await query.message.reply_text(mes)
+        return CARDIO
 
 
 async def lifting_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     Getting lifting workout duration and adding a record to database.
     """
+    query = update.callback_query
     user = update.message.from_user
     dest_lang = context.user_data['lang']
-    minutes = update.message.text
-    minutes = int(minutes)
-    await add_record(user.id, 'lifting', minutes)
-    mes = trans.translate_text(query_text='Workout added successfully. Returning to main menu.',
-                               translator='google', to_language=dest_lang)
-    await update.message.reply_text(mes)
-    return await show_main_menu(update, context)
+    try:
+        minutes = update.message.text
+        minutes = int(minutes)
+        await add_record(user.id, 'lifting', minutes)
+        mes = trans.translate_text(query_text='Workout added successfully. Returning to main menu.',
+                                   translator='google', to_language=dest_lang)
+        await update.message.reply_text(mes)
+        return await show_main_menu(update, context)
+    except:
+        mes = trans.translate_text(query_text='try inputing again',
+                                   translator='google', to_language=dest_lang)
+        await update.message.reply_text(mes)
+        await query.message.reply_text(mes)
+        return LIFTING
 
 
 async def steps_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     Getting number of steps and adding a record to database.
     """
+    query = update.callback_query
     user = update.message.from_user
     dest_lang = context.user_data['lang']
-    steps = update.message.text
-    steps = int(steps)
-    await add_record(user.id, 'steps', steps)
-    mes = trans.translate_text(query_text='Steps added successfully. Returning to the main menu.',
-                               translator='google', to_language=dest_lang)
-    await update.message.reply_text(mes)
-    return await show_main_menu(update, context)
+    try:
+        steps = update.message.text
+        steps = int(steps)
+        await add_record(user.id, 'steps', steps)
+        mes = trans.translate_text(query_text='Steps added successfully. Returning to the main menu.',
+                                   translator='google', to_language=dest_lang)
+        await update.message.reply_text(mes)
+        return await show_main_menu(update, context)
+    except:
+        mes = trans.translate_text(query_text='try inputing again',
+                                   translator='google', to_language=dest_lang)
+        await update.message.reply_text(mes)
+        await query.message.reply_text(mes)
+        return STEPS
 
 
 async def stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
